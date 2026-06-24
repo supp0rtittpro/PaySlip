@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register / ลงทะเบียน</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        input {
+            font-size: 18px !important;
+            padding: 12px !important;
+        }
+
+        button {
+            font-size: 18px !important;
+            padding: 12px !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col items-center justify-center min-h-screen p-4">
+
+    <div class="flex space-x-2 mb-4 bg-white p-2 rounded-full shadow-sm">
+        <button onclick="switchLang('th')" class="px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-700">🇹🇭 ไทย</button>
+        <button onclick="switchLang('en')" class="px-3 py-1 rounded-full text-sm font-bold bg-gray-100 text-gray-600">🇺🇸 EN</button>
+        <button onclick="switchLang('mm')" class="px-3 py-1 rounded-full text-sm font-bold bg-gray-100 text-gray-600">🇲🇲 မြန်မာ</button>
+    </div>
+
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm border border-gray-100">
+        <h2 id="lblTitle" class="text-2xl font-extrabold text-center text-green-600 mb-6">ลงทะเบียนรับสลิปเงินเดือน</h2>
+
+        <form id="regForm" class="space-y-5">
+            <input type="hidden" id="lineUserId">
+
+            <div>
+                <label id="lblEmpId" class="block text-sm font-bold text-gray-700 mb-1">รหัสพนักงาน (5 หลัก)</label>
+                <input type="number" id="employeeId" required pattern="[0-8]*" inputmode="numeric" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm border focus:ring-2 focus:ring-green-500 text-center font-bold tracking-widest" placeholder="เช่น 20001">
+            </div>
+
+            <div>
+                <label id="lblIdCard" class="block text-sm font-bold text-gray-700 mb-1">เลข 4 ตัวท้ายบัตรประชาชน / Passport</label>
+                <input type="password" id="idCard" required inputmode="numeric" maxlength="4" class="mt-1 block w-full rounded-xl border-gray-300 shadow-sm border focus:ring-2 focus:ring-green-500 text-center font-bold tracking-widest" placeholder="xxxx">
+            </div>
+
+            <button type="submit" id="btnSubmit" disabled class="w-full bg-gray-300 text-gray-500 rounded-xl font-bold cursor-not-allowed shadow-md">
+                Loading LINE System...
+            </button>
+        </form>
+    </div>
+
+    <script>
+        // ใส่ข้อมูลคอนฟิกของคุณตรงนี้
+        const LIFF_ID = '2010496927-OHRmc8GR';
+        const GAS_WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxROHrJ6iNMm6KLyMlDE5-75JRExqJrCJSCWJFWLyLKs0k5w609U_9HkvCzAzJ6zhc2LA/exec';
+
+        const translations = {
+            th: {
+                title: "ลงทะเบียนรับสลิปเงินเดือน",
+                empId: "รหัสพนักงาน (5 หลัก)",
+                idCard: "เลข 4 ตัวท้ายบัตรประชาชน / Passport",
+                btnLoading: "กำลังโหลดระบบ LINE...",
+                btnReady: "ยืนยันลงทะเบียน",
+                btnSaving: "กำลังบันทึกข้อมูล...",
+                success: "ลงทะเบียนสำเร็จแล้ว",
+                fail: "ไม่สามารถส่งข้อมูลได้"
+            },
+            en: {
+                title: "Payslip Registration",
+                empId: "Employee ID (5 digits)",
+                idCard: "Last 4 digits of ID / Passport",
+                btnLoading: "Loading LINE...",
+                btnReady: "Confirm Register",
+                btnSaving: "Saving Data...",
+                success: "Registration Successful",
+                fail: "Failed to submit data"
+            },
+            mm: {
+                title: "လစာစလစ် မှတ်ပုံတင်ခြင်း",
+                empId: "ဝန်ထမ်းကုဒ် (၅ လုံး)",
+                idCard: "မှတ်ပုံတင်/ပတ်စ်ပို့ နောက်ဆုံး ၄ လုံး",
+                btnLoading: "LINE စနစ်ကို ဒေါင်းလုဒ်လုပ်နေသည်...",
+                btnReady: "မှတ်ပုံတင်ခြင်းကို အတည်ပြုပါ။",
+                btnSaving: "ဒေတာသိမ်းဆည်းနေသည်...",
+                success: "မှတ်ပုံတင်ခြင်း အောင်မြင်ပါသည်။",
+                fail: "ဒေတာပေးပို့၍မရပါ"
+            }
+        };
+
+        let currentLang = 'th';
+
+        function switchLang(lang) {
+            currentLang = lang;
+            document.getElementById('lblTitle').innerText = translations[lang].title;
+            document.getElementById('lblEmpId').innerText = translations[lang].empId;
+            document.getElementById('lblIdCard').innerText = translations[lang].idCard;
+
+            const btn = document.getElementById('btnSubmit');
+            if (btn.disabled) {
+                btn.innerText = translations[lang].btnLoading;
+            } else {
+                btn.innerText = translations[lang].btnReady;
+            }
+        }
+
+        async function initLiff() {
+            try {
+                await liff.init({ liffId: LIFF_ID });
+                if (!liff.isLoggedIn()) {
+                    liff.login();
+                } else {
+                    const profile = await liff.getProfile();
+                    document.getElementById('lineUserId').value = profile.userId;
+
+                    const btn = document.getElementById('btnSubmit');
+                    btn.disabled = false;
+                    btn.className = "w-full bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold transition duration-200 shadow-md transform active:scale-95";
+                    btn.innerText = translations[currentLang].btnReady;
+                }
+            } catch (error) {
+                alert('LINE API Error: ' + error.message);
+            }
+        }
+
+        document.getElementById('regForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const employeeId = document.getElementById('employeeId').value;
+            const idCard = document.getElementById('idCard').value;
+            const lineUserId = document.getElementById('lineUserId').value;
+
+            const btn = document.getElementById('btnSubmit');
+            btn.disabled = true;
+            btn.innerText = translations[currentLang].btnSaving;
+
+            try {
+                const response = await fetch(GAS_WEBAPP_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ employeeId, idCard, lineUserId })
+                });
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    alert(translations[currentLang].success);
+                    liff.closeWindow();
+                } else {
+                    alert(result.message);
+                    btn.disabled = false;
+                    btn.innerText = translations[currentLang].btnReady;
+                }
+            } catch (error) {
+                alert(translations[currentLang].fail + ': ' + error.message);
+                btn.disabled = false;
+                btn.innerText = translations[currentLang].btnReady;
+            }
+        });
+
+        initLiff();
+    </script>
+</body>
+</html>
